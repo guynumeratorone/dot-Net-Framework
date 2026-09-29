@@ -1,0 +1,64 @@
+CSE 325 - Week 1 Assignment Submission
+
+web api output
+
+[
+  {
+    "id": 1,
+    "name": "Classic Italian",
+    "isGlutenFree": false
+  },
+  {
+    "id": 2,
+    "name": "Veggie",
+    "isGlutenFree": true
+  },
+  {
+    "id": 3,
+    "name": "Pepperoni",
+    "isGlutenFree": false
+  }
+]
+
+
+
+
+
+sales summary function
+
+void GenerateSalesSummary(IEnumerable<string> salesFiles, string outputFile)
+{
+    double totalSales = 0;
+    StringBuilder report = new StringBuilder();
+
+    report.AppendLine("Sales Summary");
+    report.AppendLine("----------------------------");
+
+    StringBuilder details = new StringBuilder();
+
+    foreach (var file in salesFiles)
+    {
+        string salesJson = File.ReadAllText(file);
+
+        SalesData? data =
+            JsonConvert.DeserializeObject<SalesData?>(salesJson);
+
+        double fileTotal = data?.Total ?? 0;
+
+        totalSales += fileTotal;
+
+        string fileName = Path.GetRelativePath(
+            Directory.GetCurrentDirectory(),
+            file
+        );
+
+        details.AppendLine($" {fileName}: {fileTotal:C}");
+    }
+
+    report.AppendLine($" Total Sales: {totalSales:C}");
+    report.AppendLine();
+    report.AppendLine(" Details:");
+    report.Append(details);
+
+    File.WriteAllText(outputFile, report.ToString());
+}
