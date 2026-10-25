@@ -1,0 +1,45 @@
+@page "/myorders"
+@using System.Net.Http.Json
+@inject HttpClient HttpClient
+@inject NavigationManager NavigationManager
+
+<div class="main">
+    <h2>My Orders</h2>
+    @if (error != null) { <p role="alert">@error</p> }
+    else if (ordersWithStatus == null) { <p>Loading...</p> }
+    else if (!ordersWithStatus.Any())
+    {
+        <h2>No orders placed</h2>
+        <a class="btn btn-success" href="">Order some pizza</a>
+    }
+    else
+    {
+        <div class="list-group orders-list">
+            @foreach (var item in ordersWithStatus)
+            {
+                <div class="list-group-item">
+                    <div class="col">
+                        <h5>@item.Order.CreatedTime.ToLongDateString()</h5>
+                        Items: <strong>@item.Order.Pizzas.Count()</strong><br />
+                        Total price: <strong>$@item.Order.GetFormattedTotalPrice()</strong>
+                    </div>
+                    <div class="col">Status: <strong>@item.StatusText</strong></div>
+                    <div class="col flex-grow-0">
+                        <a href="myorders/@item.Order.OrderId" class="btn btn-success">Track &gt;</a>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    List<OrderWithStatus>? ordersWithStatus;
+    string? error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { ordersWithStatus = await HttpClient.GetFromJsonAsync<List<OrderWithStatus>>($"{NavigationManager.BaseUri}orders"); }
+        catch (Exception ex) { error = $"Could not load orders: {ex.Message}"; }
+    }
+}

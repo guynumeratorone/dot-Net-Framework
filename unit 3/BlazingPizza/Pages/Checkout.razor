@@ -1,0 +1,55 @@
+@page "/checkout"
+@using System.Net.Http.Json
+@inject OrderState OrderState
+@inject HttpClient HttpClient
+@inject NavigationManager NavigationManager
+
+<div class="main">
+    <div class="checkout-cols">
+        <div class="checkout-order-details">
+            <h4>Review order</h4>
+            @if (!Order.Pizzas.Any())
+            {
+                <p>Your order is empty.</p><a href="">Get Pizza</a>
+            }
+            else
+            {
+                @foreach (var pizza in Order.Pizzas)
+                {
+                    <p><strong>@(pizza.Size)" @pizza.Special.Name ($@pizza.GetFormattedTotalPrice())</strong></p>
+                }
+                <p><strong>Total price: $@Order.GetFormattedTotalPrice()</strong></p>
+            }
+        </div>
+    </div>
+    @if (submitError != null) { <p role="alert">@submitError</p> }
+    <button class="checkout-button btn btn-warning" @onclick="PlaceOrder" disabled="@(isSubmitting || !Order.Pizzas.Any())">
+        @(isSubmitting ? "Placing order..." : "Place order")
+    </button>
+</div>
+
+@code {
+    Order Order => OrderState.Order;
+    bool isSubmitting;
+    string? submitError;
+
+    async Task PlaceOrder()
+    {
+        if (isSubmitting || !Order.Pizzas.Any()) return;
+        isSubmitting = true;
+        submitError = null;
+        try
+        {
+            var response = await HttpClient.PostAsJsonAsync($"{NavigationManager.BaseUri}orders", Order);
+            response.EnsureSuccessStatusCode();
+            var newOrderId = await response.Content.ReadFromJsonAsync<int>();
+            OrderState.ResetOrder();
+            NavigationManager.NavigateTo($"/myorders/{newOrderId}");
+        }
+        catch (Exception ex)
+        {
+            submitError = $"Order could not be placed: {ex.Message}";
+            isSubmitting = false;
+        }
+    }
+}
